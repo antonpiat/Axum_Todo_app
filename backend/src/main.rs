@@ -10,11 +10,11 @@ use axum::{
     middleware::from_fn_with_state,
     routing::{get, get_service, post, put},
 };
-
+use axum::http::Method;
 use dotenvy::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
-use tower_http::services::ServeDir;
+use tower_http::{services::ServeDir, cors::{CorsLayer, Any}};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -64,6 +64,11 @@ async fn main() {
         .route("/todo/{todo_id}", put(update_todo).delete(delete_todo))
         .layer(from_fn_with_state(db_pool.clone(), auth_middleware));
 
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(vec![Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
+        .allow_headers(Any);
+
     let user_router = Router::new()
         .route("/users", post(register))
         .route("/logout", post(logout))
@@ -72,7 +77,8 @@ async fn main() {
         .merge(router)
         .merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", ApiDoc::openapi()))
         .fallback_service(get_service(ServeDir::new("../frontend/out")))
-        .with_state(db_pool);
+        .with_state(db_pool)
+        .layer(cors);
 
     println!("Listening on: {}", listener.local_addr().unwrap());
     axum::serve(listener, user_router)

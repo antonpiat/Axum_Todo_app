@@ -13,4 +13,5 @@ dotenvy = "0.15.7"
 uuid = {version = "1.23.1", features = ["v4", "serde"]}
 utoipa = {version = "5.5.0", features = ["axum_extras"]}
 utoipa-swagger-ui = {version = "9.0.2", features = ["axum"]}
-tower-http = {version = "0.6.10", features = ["fs"]}
+tower-http = {version = "0.6.10", features = ["fs", "cors"]}
+argon2 = "0.6.0-rc.8"

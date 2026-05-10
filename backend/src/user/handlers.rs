@@ -7,6 +7,7 @@ use axum::{
 use serde_json::json;
 use sqlx::PgPool;
 use utoipa::OpenApi;
+use crate::user::hash::{hash_password, verify_password};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -51,10 +52,11 @@ pub async fn register(
     State(pg_pool): State<PgPool>,
     Json(user): Json<AuthReq>
 ) -> Result<(StatusCode, HeaderMap, String), (StatusCode, String)> {
+    let password_hash = hash_password(&user.password);
     let _new_user = sqlx::query!(
         "INSERT INTO users (username, password) VALUES ($1, $2)",
         user.username,
-        user.password
+        password_hash
     )
         .execute(&pg_pool)
         .await
@@ -104,7 +106,7 @@ pub async fn login(
 
     // Validate credentials
     match user {
-        Some(u) if u.password == credentials.password => {
+        Some(u) if verify_password(&u.password, &credentials.password) => {
             let headers = cookie(&u.username, false);
             Ok((
                 StatusCode::OK,
